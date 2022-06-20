@@ -1,4 +1,3 @@
-from distutils.log import error
 from typing import Callable, List
 import requests as rq
 import multiprocessing as mp

@@ -2,7 +2,6 @@
 import argparse
 from fuzzer import Fuzzer
 from time import perf_counter
-import cProfile
 
 parser = argparse.ArgumentParser(
     description='A simple multi-processes Web Fuzzer.\
@@ -44,4 +43,3 @@ if __name__ == '__main__':
     t0 = perf_counter()
     fuzzer = Fuzzer(**vars(args))
     fuzzer.fuzz()
-    #cProfile.run('fuzzer.fuzz()', sort='cumtime')
