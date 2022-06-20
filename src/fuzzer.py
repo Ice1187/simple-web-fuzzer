@@ -122,7 +122,7 @@ class Fuzzer:
     def print_status(self, prefix, duration):
         rate = 0.
         if self.success_req != 0:
-            rate = duration / self.success_req
+            rate = self.success_req / duration
 
         msg = prefix
         msg += f'====== Duration: {duration:.4f} sec, Rate: {rate:.4f} req/sec, Success: {self.success_req}, Error: {self.error_req}, Total: {self.success_req+self.error_req}/{self.total_req} ======'
