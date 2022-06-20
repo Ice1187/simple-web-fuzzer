@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 from fuzzer import Fuzzer
-from time import perf_counter
 
 parser = argparse.ArgumentParser(
     description='A simple multi-processes Web Fuzzer.\
@@ -40,6 +39,5 @@ match_arg_group.add_argument('-ml', action='store', nargs='+', type=int,
 if __name__ == '__main__':
     args = parser.parse_args()
 
-    t0 = perf_counter()
     fuzzer = Fuzzer(**vars(args))
     fuzzer.fuzz()
