@@ -2,6 +2,7 @@ from typing import List
 import requests as rq
 from copy import deepcopy
 from re import split
+from time import perf_counter
 from requester import HttpRequester
 
 
@@ -26,6 +27,9 @@ class Fuzzer:
 
         self.fuzz_func = None
         self.base_req = None
+        self.total_req = 0
+        self.success_req = 0
+        self.error_req = 0
 
     def fuzz(self):
         try:
@@ -33,7 +37,8 @@ class Fuzzer:
         except Exception as e:
             raise RuntimeError('Failed to build base request') from e
 
-        total_req = 0
+        print('')  # allocate 1 line for printing
+        self.t0 = perf_counter()
         words = []
         with open(self.wordlist_path, 'r', encoding=self.encoding) as wordlist:
             for i, word in enumerate(wordlist):
@@ -41,11 +46,11 @@ class Fuzzer:
                 if i % self.batch_size == self.batch_size - 1:
                     self.fuzz_func(words)
                     words = []
-                total_req += 1
+                self.total_req += 1
             self.fuzz_func(words)
 
         self.http_requester.wait()
-        return total_req
+        return self.total_req
 
     def fuzz_URL(self, words: List[str]):
         #reqs = []
@@ -65,7 +70,19 @@ class Fuzzer:
             self.http_requester.request(req, self.callback, word)
         #self.http_requester.batch_request(reqs, self.callback, words)
 
-    def fuzz_header(self, words):
+    def fuzz_header_key(self, words):
+        key_to_replace = []
+        for key in self.base_req.headers.keys():
+            if self.keyword in key:
+                key_to_replace.append(key)
+        for i, word in enumerate(words):
+            req = deepcopy(self.base_req)
+            for key in key_to_replace:
+                req.headers[key.replace(self.keyword, word)
+                            ] = req.headers.pop(key)
+            self.http_requester.request(req, self.callback, word)
+
+    def fuzz_header_value(self, words):
         #reqs = []
         for i, word in enumerate(words):
             req = deepcopy(self.base_req)
@@ -78,29 +95,38 @@ class Fuzzer:
     def callback(self, res: List[rq.Response]):
         # for r, fuzz in res:
         r, fuzz = res
+        self.success_req += 1
+
+        duration = perf_counter() - self.t0
+        rate = self.success_req / duration
         status = r.status_code
         size = len(r.content)
         word = len(split(r'[^\S\n\t]', r.text))
         line = len(r.text.split('\n'))
+
         print(
-            f'{fuzz: <32} [Status: {status}, Size: {size}, Word: {word}, Line: {line}]')
+            f'\033[1A{fuzz: <60} [Status: {status}, Size: {size}, Word: {word}, Line: {line}]')
+        print(
+            f'\033[1B====== Duration: {duration:.4f} sec, Rate: {rate:.4f} req/sec, Success: {self.success_req}, Error: {self.error_req}, Total: {self.success_req+self.error_req} ======')
 
     def _build_request(self):
-        self.fuzz_func = self._get_fuzz_func()
         self.method = self._get_method()
         self.headers = self._get_dict_headers()
         self.cookies = self._get_dict_cookies()
-
         self.base_req = rq.Request(
             self.method, self.url, self.headers, data=self.data, cookies=self.cookies)
+
+        self.fuzz_func = self._get_fuzz_func()
 
     def _get_fuzz_func(self):
         if self.keyword in self.url:
             return self.fuzz_URL
         elif self.data and self.keyword in self.data:
             return self.fuzz_data
-        elif self.header and self.keyword in self.header:
-            return self.fuzz_header
+        elif self.headers and any(self.keyword in key for key in self.headers.keys()):
+            return self.fuzz_header_key
+        elif self.headers and any(self.keyword in val for val in self.headers.values()):
+            return self.fuzz_header_value
         else:
             raise KeyError(
                 f'keyword {self.keyword} not found in URL, post data, and headers')
@@ -117,7 +143,7 @@ class Fuzzer:
         headers = {}
         for h in self.headers:
             key, val = h.split(':', 1)
-            headers[key] = val
+            headers[key] = val.strip()
         return headers
 
     def _get_dict_cookies(self):

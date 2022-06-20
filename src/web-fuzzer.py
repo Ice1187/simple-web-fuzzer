@@ -20,7 +20,7 @@ parser.add_argument('-t', '--timeout', action='store', type=float,
 http_arg_group = parser.add_argument_group('HTTP arguments')
 http_arg_group.add_argument('-X', '--method', action='store', choices=['GET', 'POST'], default='GET',
                             help='HTTP method')
-http_arg_group.add_argument('-b', '--cookies', action='store',
+http_arg_group.add_argument('-b', '--cookies', action='store', nargs='+',
                             help='Cookies `"Key=Value", use `-b "Key1: Value1" "Key2: Value2" to set multiple cookies')
 http_arg_group.add_argument('-d', '--data', action='store',
                             help='HTTP Post data')
@@ -34,10 +34,5 @@ if __name__ == '__main__':
 
     t0 = perf_counter()
     fuzzer = Fuzzer(**vars(args))
-    total_req = fuzzer.fuzz()
-
-    duration = perf_counter()-t0
-    rate = total_req / duration
-    print(
-        f'\n------ Duration: {duration:.4f} sec, Rate: {rate:.4f} req/sec  ------')
+    fuzzer.fuzz()
     #cProfile.run('fuzzer.fuzz()', sort='cumtime')
