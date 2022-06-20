@@ -48,19 +48,24 @@ class Fuzzer:
         except Exception as e:
             raise RuntimeError('Failed to build base request') from e
 
-        print('')  # allocate 1 line for printing
-        self.t0 = perf_counter()
-        words = []
-        with open(self.wordlist_path, 'r', encoding=self.encoding) as wordlist:
-            for i, word in enumerate(wordlist):
-                words.append(word[:-1])  # [:-1] remove newline
-                if i % self.batch_size == self.batch_size - 1:
-                    self.fuzz_func(words)
-                    words = []
-                self.total_req += 1
-            self.fuzz_func(words)
+        try:
+            print('')  # allocate 1 line for printing
+            self.t0 = perf_counter()
+            words = []
+            with open(self.wordlist_path, 'r', encoding=self.encoding) as wordlist:
+                for i, word in enumerate(wordlist):
+                    words.append(word[:-1])  # [:-1] remove newline
+                    if i % self.batch_size == self.batch_size - 1:
+                        self.fuzz_func(words)
+                        words = []
+                    self.total_req += 1
+                self.fuzz_func(words)
 
-        self.http_requester.wait()
+            self.http_requester.wait()
+        except KeyboardInterrupt:
+            self.print_status('\033[1A\r', perf_counter() - self.t0)
+            return self.success_req + self.error_req
+
         self.print_status('\033[1A\r', perf_counter() - self.t0)
         return self.total_req
 
