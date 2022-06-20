@@ -7,21 +7,32 @@ from requester import HttpRequester
 
 
 class Fuzzer:
-    def __init__(self, url, wordlist, proc, timeout, encoding=None, method=None, cookies=None, data=None, headers=None, redirect=None):
+    def __init__(self, url, wordlist, proc, timeout, encoding=None, method=None, cookies=None, data=None, headers=None, redirect=None, mc=None, ms=None, mw=None, ml=None):
         self.keyword = 'FUZZ'
+        self.batch_size = 256
+
+        # required arguments
         self.url = url
         self.wordlist_path = wordlist
         self.encoding = encoding
         self.proc_num = proc
         self.timeout = timeout
 
+        # http arguments
         self.method = method
         self.cookies = cookies
         self.data = data
         self.headers = headers
         self.redirect = redirect
 
-        self.batch_size = 256
+        # match arguments
+        self.matches = {
+            'codes': ['all'] if 'all' in mc else [int(c) for c in mc],
+            'size': ms if ms else [],
+            'word': mw if mw else [],
+            'line': ml if ml else [],
+        }
+
         self.http_requester = HttpRequester(
             self.proc_num, self.timeout, self.redirect)
 
@@ -50,25 +61,22 @@ class Fuzzer:
             self.fuzz_func(words)
 
         self.http_requester.wait()
+        self.print_status('\033[1A\r', perf_counter() - self.t0)
         return self.total_req
 
     def fuzz_URL(self, words: List[str]):
-        #reqs = []
         for i, word in enumerate(words):
             req = deepcopy(self.base_req)
             req.url = req.url.replace(self.keyword, word)
-            # reqs.append(req)
-            self.http_requester.request(req, self.callback, word)
-        #self.http_requester.batch_request(reqs, self.callback, words)
+            self.http_requester.request(
+                req, word, self.callback, self.err_callback)
 
     def fuzz_data(self, words: List[str]):
-        #reqs = []
         for i, word in enumerate(words):
             req = deepcopy(self.base_req)
             req.data = req.data.replace(self.keyword, word)
-            # reqs.append(req)
-            self.http_requester.request(req, self.callback, word)
-        #self.http_requester.batch_request(reqs, self.callback, words)
+            self.http_requester.request(
+                req, word, self.callback, self.err_callback)
 
     def fuzz_header_key(self, words):
         key_to_replace = []
@@ -80,34 +88,43 @@ class Fuzzer:
             for key in key_to_replace:
                 req.headers[key.replace(self.keyword, word)
                             ] = req.headers.pop(key)
-            self.http_requester.request(req, self.callback, word)
+            self.http_requester.request(
+                req, word, self.callback, self.err_callback)
 
     def fuzz_header_value(self, words):
-        #reqs = []
         for i, word in enumerate(words):
             req = deepcopy(self.base_req)
             for key in req.headers.keys():
                 req.headers[key] = req.headers[key].replace(self.keyword, word)
-            # reqs.append(req)
-            self.http_requester.request(req, self.callback, word)
-        #self.http_requester.batch_request(reqs, self.callback, words)
+            self.http_requester.request(
+                req, word, self.callback, self.err_callback)
 
-    def callback(self, res: List[rq.Response]):
-        # for r, fuzz in res:
+    def callback(self, res: rq.Response):
         r, fuzz = res
         self.success_req += 1
 
         duration = perf_counter() - self.t0
-        rate = self.success_req / duration
         status = r.status_code
         size = len(r.content)
         word = len(split(r'[^\S\n\t]', r.text))
         line = len(r.text.split('\n'))
 
-        print(
-            f'\033[1A{fuzz: <60} [Status: {status}, Size: {size}, Word: {word}, Line: {line}]')
-        print(
-            f'\033[1B====== Duration: {duration:.4f} sec, Rate: {rate:.4f} req/sec, Success: {self.success_req}, Error: {self.error_req}, Total: {self.success_req+self.error_req} ======')
+        if status in self.matches['codes'] or 'all' in self.matches['codes'] \
+                or size in self.matches['size'] or word in self.matches['word'] or line in self.matches['line']:
+            print(
+                f'\033[1A{fuzz: <60} [Status: {status}, Size: {size}, Word: {word}, Line: {line}]')
+            self.print_status('\033[1B', duration)
+
+    def err_callback(self, err):
+        self.error_req += 1
+        print(err)
+
+    def print_status(self, prefix, duration):
+        rate = duration / self.success_req
+
+        msg = prefix
+        msg += f'====== Duration: {duration:.4f} sec, Rate: {rate:.4f} req/sec, Success: {self.success_req}, Error: {self.error_req}, Total: {self.success_req+self.error_req}/{self.total_req} ======'
+        print(msg)
 
     def _build_request(self):
         self.method = self._get_method()

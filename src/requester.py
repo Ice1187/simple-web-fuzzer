@@ -1,3 +1,4 @@
+from distutils.log import error
 from typing import Callable, List
 import requests as rq
 import multiprocessing as mp
@@ -25,27 +26,20 @@ class HttpRequester:
         self.timeout = timeout
         self.redirect = redirect
 
-    def request(self, r: rq.Request, callback: Callable[[rq.Response], None], word: str):
+    def request(self, r: rq.Request, word: str, callback: Callable[[rq.Response], None], err_callback):
         req = _HttpRequest(r, self.timeout, word, self.redirect)
         self.pool.apply_async(
-            req.request, (), callback=callback)
-        #result = self.pool.apply_async(req.request, (), callback=callback)
-        # self.results.append(result)
+            req.request, (), callback=callback, error_callback=err_callback)
 
-    def batch_request(self, rs: List[rq.Request], callback: Callable[[List[rq.Response]], None], words: List[str]):
+    def batch_request(self, rs: List[rq.Request], words: List[str], callback: Callable[[List[rq.Response]], None], err_callback):
         reqs = [_HttpRequest(rs[i], self.timeout, words[i], self.redirect)
                 for i in range(len(rs))]
-        results = self.pool.map_async(
-            _HttpRequest.request, reqs, callback=callback)
-        self.results.append(results)
+        self.pool.map_async(_HttpRequest.request, reqs,
+                            callback=callback, error_callback=err_callback)
 
     def wait(self):
         self.pool.close()
         self.pool.join()
-        #ret = []
-        # for r in self.results:
-        #    ret.append(r.get())
-        # return ret
 
 
 def default_callback(res):
