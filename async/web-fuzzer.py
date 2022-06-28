@@ -15,8 +15,6 @@ parser.add_argument('-w', '--wordlist', action='store',
                     required=True, help='Wordlist file path (required)')
 parser.add_argument('-e', '--encoding', action='store', default='utf-8',
                     help='Encoding for the wordlist, referring to Python Codecs (default: utf-8)')
-parser.add_argument('-p', '--proc', action='store', type=int,
-                    default=32, help='Number of concurrent processes (default: 32)')
 parser.add_argument('-t', '--timeout', action='store', type=float,
                     default=100000.0, help='HTTP request timeout in seconds (default: 10.0)')
 http_arg_group = parser.add_argument_group('HTTP arguments')
@@ -32,7 +30,6 @@ http_arg_group.add_argument('-r', '--redirect', action='store_true',
                             help='Follow redirects, add `-r` to follow (default: false)')
 
 keyword = 'FUZZ'
-# batch_size = 256
 total_req = 0
 success_req = 0
 error_req = 0
@@ -169,19 +166,13 @@ async def main():
 
     print('')  # allocate 1 line for printing
     t0 = perf_counter()
-    #words = []
     with open(args.wordlist, 'r', encoding=args.encoding) as wordlist:
         for i, word in enumerate(wordlist):
-            # words.append(word[:-1])  # [:-1] remove newline
             word = word[:-1]
             total_req += 1
             task = asyncio.create_task(fuzz_func(session, keyword, base_req, word,
                                                  args.timeout, args.redirect))
             tasks.append(task)
-            # if i % batch_size == batch_size - 1:
-            # fuzz_func(session, keyword, base_req, words, args.timeout, args.redirect)
-            # words = []
-        # fuzz_func(session, keyword, base_req, words, args.timeout, args.redirect)
 
     await asyncio.wait(tasks)
     await session.close()
