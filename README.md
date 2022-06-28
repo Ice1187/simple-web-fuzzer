@@ -13,11 +13,13 @@ A simple multi-process web fuzzer written in Python.
 
 ```bash
 git clone git@github.com:Ice1187/simple-web-fuzzer.git
-chmod +x simple-web-fuzzer/src/web-fuzzer.py
-./simple-web-fuzzer/src/web-fuzzer.py --help
+chmod +x simple-web-fuzzer/<version>/web-fuzzer.py
+./simple-web-fuzzer/<version>/web-fuzzer.py --help
 ```
 
 ## Help
+
+Here is the usage of multi-processing version.
 
 ```
 usage: web-fuzzer.py [-h] -u URL -w WORDLIST [-e ENCODING] [-p PROC] [-t TIMEOUT] [-X {GET,POST}] [-b COOKIES [COOKIES ...]]
