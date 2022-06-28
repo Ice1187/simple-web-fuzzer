@@ -1,5 +1,5 @@
 # Simple Web Fuzzer
-A simple multi-process web fuzzer written in Python.
+A simple web fuzzer written in Python with async/multi-processing/sequential version.
 
 ## Getting Started
 
