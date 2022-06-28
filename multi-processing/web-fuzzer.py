@@ -12,7 +12,7 @@ parser.add_argument('-w', '--wordlist', action='store',
 parser.add_argument('-e', '--encoding', action='store', default='utf-8',
                     help='Encoding for the wordlist, referring to Python Codecs (default: utf-8)')
 parser.add_argument('-p', '--proc', action='store', type=int,
-                    default=60, help='Number of concurrent processes (default: 32)')
+                    default=100, help='Number of concurrent processes (default: 32)')
 parser.add_argument('-t', '--timeout', action='store', type=float,
                     default=10.0, help='HTTP request timeout in seconds (default: 10.0)')
 http_arg_group = parser.add_argument_group('HTTP arguments')
