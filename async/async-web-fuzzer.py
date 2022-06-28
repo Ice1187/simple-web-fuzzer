@@ -18,7 +18,7 @@ parser.add_argument('-e', '--encoding', action='store', default='utf-8',
 parser.add_argument('-p', '--proc', action='store', type=int,
                     default=32, help='Number of concurrent processes (default: 32)')
 parser.add_argument('-t', '--timeout', action='store', type=float,
-                    default=10.0, help='HTTP request timeout in seconds (default: 10.0)')
+                    default=100000.0, help='HTTP request timeout in seconds (default: 10.0)')
 http_arg_group = parser.add_argument_group('HTTP arguments')
 http_arg_group.add_argument('-X', '--method', action='store', choices=['GET', 'POST'], default='GET',
                             help='HTTP method')
@@ -102,7 +102,7 @@ async def fuzz_data(s, keyword, base_req, word, timeout, redirect):
     req = deepcopy(base_req)
     req['data'] = req['data'].replace(keyword, word)
 
-    res = await s.send(req, timeout=timeout, allow_redirects=redirect)
+    res = await s.request(**req, timeout=timeout, allow_redirects=redirect)
     await print_res(res, word)
 
 
@@ -114,7 +114,7 @@ async def fuzz_header_key(s, keyword, base_req, word, timeout, redirect):
     req = deepcopy(base_req)
     for key in key_to_replace:
         req['headers'][key.replace(keyword, word)] = req['headers'].pop(key)
-    res = await s.send(req, timeout=timeout, allow_redirects=redirect)
+    res = await s.request(**req, timeout=timeout, allow_redirects=redirect)
     await print_res(res, word)
 
 
@@ -122,7 +122,7 @@ async def fuzz_header_value(s, keyword, base_req, word, timeout, redirect):
     req = deepcopy(base_req)
     for key in req['headers'].keys():
         req['headers'][key] = req['headers'][key].replace(keyword, word)
-    res = await s.send(req, timeout=timeout, allow_redirects=redirect)
+    res = await s.request(**req, timeout=timeout, allow_redirects=redirect)
     await print_res(res, word)
 
 
