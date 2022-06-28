@@ -138,6 +138,8 @@ async def print_res(r, fuzz):
     word = len(split(r'[^\S\n\t]', text))
     line = len(text.split('\n'))
 
+    r.close()
+
     print(
         f'\033[1A{fuzz: <60} [Status: {status}, Size: {size}, Word: {word}, Line: {line}]')
     print_status('\033[1B', duration)
@@ -157,7 +159,8 @@ async def main():
     global total_req, t0
     args = parser.parse_args()
 
-    session = aiohttp.ClientSession()
+    timeout = aiohttp.ClientTimeout(total=args.timeout)
+    session = aiohttp.ClientSession(timeout=timeout)
 
     headers = _get_dict_headers(args.headers)
     fuzz_func = get_fuzz_func(keyword, args.url, args.data, headers)
