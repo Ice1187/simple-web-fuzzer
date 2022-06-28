@@ -6,7 +6,8 @@ A simple multi-process web fuzzer written in Python.
 ### Dependencies
 
 - Python3 (tested on Python3.9)
-- [`requests`](https://requests.readthedocs.io/en/latest/user/install/#install) module
+- [`requests`](https://requests.readthedocs.io/en/latest/) module (for multi-processing and sequential version)
+- [`aiohttp`](https://docs.aiohttp.org/en/stable/) module (for async version)
 
 ### Installing
 
